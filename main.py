@@ -1,6 +1,8 @@
 saldo = 0
 extrato = ""
 quantidade_saque_diario = 0
+clientes = []
+contas = []
 
 def menu():
     print("""
@@ -17,6 +19,7 @@ def depositar(saldo, extrato):
     valor_deposito = float(input("Digite o valor que deseja Depositar\n"))
     if(valor_deposito > 0):
         saldo += valor_deposito
+        extrato += (f"+ R$ {valor_deposito:.2f}\n")
         print(f"Deposito Realizado com Sucesso\nSeu novo saldo é:{saldo:.2f}")
     else:
         print("Valor do Deposito deve ser acima de R$ 0,00")
@@ -28,8 +31,9 @@ def saque(saldo, extrato, quantidade_saque_diario):
     valor_saque = float(input("Digite o valor que deseja sacar\n"))
     if(valor_saque < saldo and valor_saque <= LIMITE_MAXIMO_POR_SAQUE and quantidade_saque_diario<3):
         saldo -= valor_saque
-        print(f"Saque Realizado com Sucesso\nSeu novo saldo é:{saldo:.2f}")
         quantidade_saque_diario += 1
+        extrato += (f"- R$ {valor_saque:.2f}\n")
+        print(f"Saque Realizado com Sucesso\nSeu novo saldo é:{saldo:.2f}")
     elif(valor_saque > saldo):
         print("Saldo Insuficiente")
     elif(valor_saque > LIMITE_MAXIMO_POR_SAQUE):
@@ -38,10 +42,14 @@ def saque(saldo, extrato, quantidade_saque_diario):
         print("Limite de Saque Diarios Permitido Alcançado")
     return saldo, extrato, quantidade_saque_diario
 
-def extrato():
+def imprimir_extrato(extrato):
+    print(extrato)
     print(f"Saldo Atual: {saldo}")
+    return extrato
     
-#def cadastrar_cliente():
+def cadastrar_cliente():
+    cliente
+    clientes.append(input())
 
 #def cadastrar_conta():
 
@@ -56,7 +64,7 @@ while(system_on == True):
         case 2:
             saldo, extrato, quantidade_saque_diario = saque(saldo, extrato, quantidade_saque_diario)
         case 3:
-            extrato()
+            extrato = imprimir_extrato(extrato)
         case 4:
             cadastrar_cliente()
         case 5:
