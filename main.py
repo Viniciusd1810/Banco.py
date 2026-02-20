@@ -1,156 +1,157 @@
-quantidade_saque_diario = 0
-numero_conta = 0
+from decimal import Decimal
+from cliente import Cliente
+from endereco import Endereco
+from sessao import Sessao
+from transacao import Deposito, Saque
+
 clientes = {}
 sessao = None
 
+
 def menu_principal():
-    print("""
+    print(
+        """
     Banco
     [1] - Cadastrar Cliente
     [2] - Cadastrar Conta
     [3] - Logar na Conta
     [4] - Encerrar o Sistema
-    """)
-    
+    """
+    )
+
+
 def menu_logado():
-    print("""
+    print(
+        """
     Banco
     [1] - Depositar
     [2] - Saque
-    [3] - Extrato
-    [4] - Deslogar
-    """)
-    
+    [3] - Transferência
+    [4] - Extrato
+    [5] - Deslogar
+    """
+    )
+
+
 def cadastrar_cliente(clientes):
     cpf = input("Digite seu CPF:\n")
-    if cpf not in clientes:
-        nome = input("Digite seu Primeiro Nome:\n")
-        sobrenome = input("Digite seu sobrenome:\n")
-        data_nascimento = input("Digite sua data de Nascimento\n")
-        enderoco_logradouro = input("Digite o logradouro de sua resideência:\n")
-        endereco_numero = input("Digite o numero de sua residência:\n")
-        endereco_bairro = input("Digite o bairro de sua residência:\n")
-        endereco_cidade = input("Digite a Cidade de sua residência:\n")
-        endereco_estado = input("Digite o a sigla do estado de sua residência:\n")
-        
-        clientes[cpf] = {
-            "nome_completo":{
-                "nome": nome,
-                "sobrenome": sobrenome
-            },
-            "data_de_nascimento": data_nascimento,
-            "endereco":{
-                "logradouro": enderoco_logradouro,
-                "numero": endereco_numero,
-                "bairro": endereco_bairro,
-                "cidade": endereco_cidade,
-                "estado": endereco_estado
-            }
-        }
-        print("Cliente Cadastrado com Sucesso!")
-    else:
+    if cpf in clientes:
         print("CPF já cadastrado")
+        return None
 
-def cadastrar_conta(clientes, numero_conta):
+    nome = input("Digite seu Primeiro Nome:\n")
+    sobrenome = input("Digite seu sobrenome:\n")
+    data_nascimento = input("Digite sua data de Nascimento\n")
+    logradouro = input("Digite o logradouro de sua resideência:\n")
+    numero = input("Digite o numero de sua residência:\n")
+    bairro = input("Digite o bairro de sua residência:\n")
+    cidade = input("Digite a Cidade de sua residência:\n")
+    estado = input("Digite o a sigla do estado de sua residência:\n")
+
+    endereco = Endereco(logradouro, numero, bairro, cidade, estado)
+    cliente = Cliente(cpf, nome, sobrenome, data_nascimento, endereco)
+
+    clientes[cpf] = cliente
+    print("Cliente Cadastrado com Sucesso!")
+    print(cliente)
+
+
+def cadastrar_conta(clientes):
     cliente = input("Digite seu CPF:\n")
-    if cliente in clientes:
-        senha = int(input("Digite uma Senha númerica:\n"))
-        numero_conta += 1
-        if "contas" not in clientes[cliente]:
-            clientes[cliente]["contas"] = {}
-            clientes[cliente]["contas"][numero_conta] = {
-                "agencia": "01",
-                "senha": senha,
-                "saldo": 0,
-                "extrato": ""
-            }
-        else:
-            clientes[cliente]["contas"][numero_conta] = {
-                "agencia": "01",
-                "senha": senha,
-                "saldo": 0,
-                "extrato": ""
-            }
-    else:
+    if cliente not in clientes:
         print("Cliente não cadastrado")
-    return numero_conta
+        return None
 
-def logar(clientes, sessao):
+    try:
+        senha = int(input("Digite uma Senha númerica:\n"))
+    except ValueError:
+        print("Senha deve ser um valor numérico")
+        return None
+
+    clientes[cliente].criar_conta(senha)
+    print("Conta cadastrada com Sucesso")
+
+
+def logar(clientes):
     cliente = input("Digite seu CPF:")
-    if cliente in clientes and "contas" in clientes[cliente]:
-        print(clientes[cliente]["contas"])
-        escolha_conta = int(input("Digite o numero da conta:\n"))
-        if escolha_conta in clientes[cliente]["contas"]:
-            senha = int(input("Digite a senha da conta:"))
-            if senha == clientes[cliente]["contas"][escolha_conta]["senha"]:
-                sessao = {
-                    "cliente_ativo": cliente,
-                    "conta_ativa": escolha_conta
-                }
-                print("Sessão Logada")
-            else:
-                print("Senha Inválida")
-        else:
-            print("Conta não existente")
-    else:
+    if cliente not in clientes:
         print("Cliente não cadastrado")
+        return None
+    clientes[cliente].listar_contas()
+
+    try:
+        conta_selecionada = int(input("Digite o numero da conta:\n"))
+    except ValueError:
+        print("Número de conta inválido")
+        return None
+
+    if conta_selecionada not in clientes[cliente].contas:
+        print("Conta não existente")
+        return None
+
+    try:
+        senha = int(input("Digite a senha da conta:"))
+    except ValueError:
+        print("Senha deve ser um valor numérico")
+        return None
+
+    conta_ativa = clientes[cliente].contas[conta_selecionada]
+    senha_validada = conta_ativa.validar_senha(senha)
+
+    if not senha_validada:
+        print("Senha Inválida")
+        return None
+    sessao = Sessao(conta_ativa)
+    print("Sessão Logada")
     return sessao
 
 
-def depositar(clientes, sessao):
-    valor_deposito = float(input("Digite o valor que deseja Depositar\n"))
-    if(valor_deposito >= 0):
-        conta = clientes[sessao["cliente_ativo"]]["contas"][sessao["conta_ativa"]]
-        conta["saldo"] += valor_deposito
-        conta["extrato"] += (f"+ R$ {valor_deposito:.2f}\n")
-        print(f"Deposito Realizado com Sucesso\nSeu novo saldo é:{conta["saldo"]:.2f}")
-    else:
-        print("Valor do Deposito deve ser acima de R$ 0,00")
+def depositar(sessao):
+    try:
+        valor_deposito = Decimal(input("Digite o valor que deseja Depositar\n"))
+    except ValueError:
+        print("Valor de Deposito deve ser um valor numerico")
+        return None
 
-def saque(clientes, sessao, quantidade_saque_diario):
-    LIMITE_MAXIMO_POR_SAQUE = 500
-    valor_saque = float(input("Digite o valor que deseja sacar\n"))
-    conta = clientes[sessao["cliente_ativo"]]["contas"][sessao["conta_ativa"]]
-    
-    if(valor_saque <= 0):
-        print("Valor do saque deve ser acima de R$ 0,00")
-        return
-    if(valor_saque > conta["saldo"]):
-        print("Saldo Insuficiente")
-        return
-    
-    if(valor_saque > LIMITE_MAXIMO_POR_SAQUE):
-        print("Valor de Saque excede o Valor permitido por Transação")
-        return
-    
-    if(quantidade_saque_diario==3):
-        print("Limite de Saque Diarios Permitido Alcançado")
-        return
-    
-    conta["saldo"] -= valor_saque
-    quantidade_saque_diario += 1
-    conta["extrato"] += (f"- R$ {valor_saque:.2f}\n")
-    print(f"Saque Realizado com Sucesso\nSeu novo saldo é:{conta["saldo"]:.2f}")
-    
-    return quantidade_saque_diario
+    try:
+        Deposito(valor_deposito).registrar(sessao.conta)
+        print(f"Deposito Realizado com Sucesso\nSeu novo saldo é:{sessao.conta.saldo_formatado}")
+    except ValueError as e:
+        print(e)
 
-def imprimir_extrato(clientes, sessao):
-    conta = clientes[sessao["cliente_ativo"]]["contas"][sessao["conta_ativa"]]
-    print(conta["extrato"])
-    print(f"Saldo Atual: {conta["saldo"]:.2f}")
-    
+
+def saque(sessao):
+    try:
+        valor_saque = Decimal(input("Digite o valor que deseja sacar\n"))
+    except ValueError:
+        print("Valor do Saque deve ser um valor numerico")
+        return None
+
+    try:
+        Saque(valor_saque).registrar(sessao.conta)
+        print(f"Saque Realizado com Sucesso\nSeu novo saldo é:{sessao.conta.saldo_formatado}")
+    except ValueError as e:
+        print(e)
+
+
+def imprimir_extrato(sessao):
+    for transacao in sessao.conta.historico.transacoes:
+        print(transacao)
+    print(f"Saldo Atual: {sessao.conta.saldo_formatado}")
+
+
 system_on = True
-while(system_on == True):
-    if sessao == None:
+while system_on is True:
+    if sessao is None:
         menu_principal()
         operacao = input("Escolha uma operação:\n")
         match operacao:
             case "1":
                 cadastrar_cliente(clientes)
             case "2":
-                numero_conta = cadastrar_conta(clientes, numero_conta)
+                cadastrar_conta(clientes)
             case "3":
-                sessao = logar(clientes, sessao)
+                sessao = logar(clientes)
             case "4":
                 system_on = False
                 print("Encerrando Sistema...")
@@ -161,12 +162,14 @@ while(system_on == True):
         operacao = input("Escolha uma operação:\n")
         match operacao:
             case "1":
-                depositar(clientes, sessao)
+                depositar(sessao)
             case "2":
-                quantidade_saque_diario = saque(clientes, sessao, quantidade_saque_diario)
+                saque(sessao)
             case "3":
-                imprimir_extrato(clientes, sessao)
+                pass
             case "4":
+                imprimir_extrato(sessao)
+            case "5":
                 sessao = None
                 print("Sessão Deslogada...")
             case _:
